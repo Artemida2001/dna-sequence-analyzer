@@ -7,6 +7,8 @@
 DNA Sequence Analyzer is a Tkinter-based GUI tool built for educational and research purposes.  
 It lets you load DNA sequences (from FASTA, TXT, or NCBI), analyze motifs, detect open reading frames (ORFs), perform pairwise alignment, visualize motif distribution, generate heatmaps, and export results (CSV, PDF, FASTA).
 
+![My app screenshot](./screenshot.png)
+
 ---
 
 ## ✨ Features
