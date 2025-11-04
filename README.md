@@ -61,13 +61,13 @@ cd dna-sequence-analyzer
 
 ## Requirements
 
-```
-biopython
-pandas
-matplotlib
-seaborn
-fpdf2
-```
+This project requires the following python dependencies:
+
+1. biopython (>= v.1.8.5)
+2. pandas (>= v.2.3.3)
+3. matplotlib (>= v.3.10.6)
+4. seaborn (>= v.0.13.2)
+5. fpdf2 (>= v.2.8.5)
 
 ## Run the App
 
