@@ -14,6 +14,7 @@ from typing import Dict, List, Optional, Tuple
 from Bio import Entrez, SeqIO
 from Bio.Align import PairwiseAligner
 from Bio.Seq import Seq
+from Bio.SeqUtils import gc_fraction
 from fpdf import FPDF
 from fpdf.enums import XPos, YPos
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
@@ -23,7 +24,7 @@ import seaborn as sns
 
 
 __author__ = "Artemida Chadzinikolau"
-__version__ = "1.1"
+__version__ = "1.2"
 
 # App configuration
 Entrez.email = "your_email@example.com"  # Required by NCBI
@@ -41,6 +42,7 @@ STYLES = {
     "Export.TButton": {"background": "#DCEDC8", "foreground": "#33691E"},
     "PDF.TButton": {"background": "#BBDEFB", "foreground": "#0D47A1"},
     "Heatmap.TButton": {"background": "#FFC107"},
+    "Align.TButton": {"background": "#F0EAD6", "foreground": "#5D4037"},
 }
 plt.rcParams.update({
     "font.family": "sans-serif",
@@ -64,7 +66,7 @@ class App:
     def __init__(self, master: tk.Tk) -> None:
         self.master = master
         master.title(f"🧬 DNA Sequence Analyzer v{__version__} - {__author__}")
-        master.geometry("1200x700")
+        master.geometry("1280x800")
 
         # State
         self.sequences: Dict[str, Seq] = {}
@@ -90,17 +92,17 @@ class App:
         self.paned_window.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
         # Left Panel
-        self.left_panel = ttk.Frame(self.paned_window, width=480)
-        self.paned_window.add(self.left_panel, weight=5)
+        self.left_panel = ttk.Frame(self.paned_window, width=650)
+        self.paned_window.add(self.left_panel, weight=4)
         self._setup_left_panel()
 
         # Right Panel
         self.right_panel = ttk.Frame(self.paned_window)
-        self.paned_window.add(self.right_panel, weight=8)
+        self.paned_window.add(self.right_panel, weight=7)
 
     def _setup_left_panel(self) -> None:
         # Load Frame
-        load_frame = ttk.LabelFrame(self.left_panel, text="📥 Load Sequences")
+        load_frame = ttk.LabelFrame(self.left_panel, text="Load Sequences")
         load_frame.pack(fill=tk.X, padx=10, pady=10)
 
         ttk.Button(load_frame, text="From FASTA/TXT file", command=self.load_from_file).pack(
@@ -143,9 +145,9 @@ class App:
         self.tab_orf = ttk.Frame(self.notebook)
         self.tab_alignment = ttk.Frame(self.notebook)
 
-        self.notebook.add(self.tab_analysis, text="🔎 Motif Analysis")
-        self.notebook.add(self.tab_orf, text="▶️ ORF Detection")
-        self.notebook.add(self.tab_alignment, text="🧬 Alignment")
+        self.notebook.add(self.tab_analysis, text="Motif Analysis")
+        self.notebook.add(self.tab_orf, text="ORF Detection")
+        self.notebook.add(self.tab_alignment, text="Alignment")
 
         self._setup_analysis_tab()
         self._setup_orf_tab()
@@ -311,13 +313,10 @@ class App:
             messagebox.showerror("NCBI Error", f"Failed to fetch:\n{e}")
             self._update_status("NCBI ERROR", "red")
 
-    # === Stats & Selection ===
+    # Stats & Selection
     def _calculate_stats(self, seq: Seq) -> Dict[str, float]:
         s = str(seq).upper()
-        length = len(s)
-        counts = {b: s.count(b) for b in "GCAT"}
-        gc = (counts["G"] + counts["C"]) / sum(counts.values()) * 100 if sum(counts.values()) else 0.0
-        return {"length": length, "gc": gc}
+        return {"length": len(s), "gc": gc_fraction(s) * 100}
 
     def _refresh_stats_table(self) -> None:
         for item in self.stats_tree.get_children():
@@ -450,7 +449,7 @@ class App:
                 self.ax.scatter(
                     data["positions"], [y] * len(data["positions"]), color=color, marker="|", s=50
                 )
-                max_count = max(max_count, max(data["segment_counts"]))
+                max_count = max(max_count, max(data["segment_counts"]) if data["segment_counts"] else 0)
                 scatter_bottom = min(scatter_bottom, y)
 
             self.ax.set_title(f"Motif Distribution in {self.current_seq_id}")
@@ -529,6 +528,7 @@ class App:
 
         try:
             aligner = PairwiseAligner()
+
             aligner.mode = "fogsaa"
             alignments = aligner.align(seq1, seq2)
             self.align_results_text.delete("1.0", tk.END)
